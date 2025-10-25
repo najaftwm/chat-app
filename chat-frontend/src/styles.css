@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* Small custom styles to ensure chat scroll height */
+.chat-container {
+  height: calc(100vh - 4rem); /* account for header if needed */
+}
