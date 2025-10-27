@@ -73,17 +73,30 @@ export default function ChatWindow({ mode, customerId, agentId: initialAgentId }
     }
 
     // Initialize Pusher and subscribe
+    console.log('🔌 Initializing Pusher connection...')
     const pusher = new Pusher(key, { cluster, forceTLS: true })
     pusherRef.current = pusher
 
     const channelName = `chat_channel_${customerId}`
+    console.log('📡 Subscribing to channel:', channelName)
     const channel = pusher.subscribe(channelName)
     channelRef.current = channel
 
     const handler = (payload) => {
-      // Append payload to messages
+      console.log(' Pusher received:', payload)
+      
+      // Append payload to messages with ID-based deduplication
       setMessages((prev) => {
-        // keep ordering: older first, newest appended
+        // Check if message with this ID already exists
+        if (payload.id) {
+          const exists = prev.some(msg => msg.id && msg.id === payload.id)
+          if (exists) {
+            console.log(' Duplicate ID detected, skipping:', payload.id)
+            return prev
+          }
+        }
+        
+        console.log('✅ Adding new message')
         return [...prev, payload]
       })
       // scroll to bottom so new message is visible
@@ -93,12 +106,15 @@ export default function ChatWindow({ mode, customerId, agentId: initialAgentId }
     channel.bind('new_message', handler)
 
     return () => {
+      console.log(' Cleaning up Pusher connection...')
       if (channel) {
         channel.unbind('new_message', handler)
         pusher.unsubscribe(channelName)
+        console.log(' Unsubscribed from:', channelName)
       }
       if (pusher) {
         pusher.disconnect()
+        console.log(' Pusher disconnected')
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -107,32 +123,33 @@ export default function ChatWindow({ mode, customerId, agentId: initialAgentId }
   // Send message handler
   const handleSend = async () => {
     if (!text || !customerId) return
+    
+    console.log(' Sending message:', text)
+    
     // Prepare payload depending on mode
     const payload = { customer_id: Number(customerId), message: text }
     if (mode === 'agent') {
       // agent must include agent_id
       payload.agent_id = Number(agent)
     }
+    
+    console.log(' Payload:', payload)
+    
     try {
       const res = await sendMessage(payload)
+      console.log(' Send response:', res)
+      
       if (res.status === 'success') {
-        // optimistic update: append local copy
-        const localMsg = {
-          id: `local-${Date.now()}`,
-          type: res.type || (mode === 'agent' ? 'outgoing' : 'incoming'),
-          message: text,
-          customer_id: Number(customerId),
-          agent_id: mode === 'agent' ? Number(agent) : null,
-          created_at: new Date().toISOString().slice(0,19).replace('T',' ')
-        }
-        setMessages((prev) => [...prev, localMsg])
+        // Clear input - message will appear via Pusher
         setText('')
-        setTimeout(scrollToBottom, 50)
+        console.log(' Input cleared, waiting for Pusher...')
+        // Note: No optimistic update - we rely on Pusher to add the message
+        // This prevents duplicates and ensures both users see messages identically
       } else {
-        console.error('Send failed', res)
+        console.error(' Send failed', res)
       }
     } catch (err) {
-      console.error('Send error', err)
+      console.error(' Send error', err)
     }
   }
 
@@ -149,11 +166,15 @@ export default function ChatWindow({ mode, customerId, agentId: initialAgentId }
       {/* Header */}
       <div className="p-4 border-b flex items-center justify-between bg-white">
         <div>
-          <div className="text-sm text-slate-500">Chat with Customer</div>
-          <div className="font-semibold">Customer #{customerId}</div>
+          <div className="text-sm text-slate-500">
+            {mode === 'agent' ? 'Chat with Customer' : 'Chat with Agent'}
+          </div>
+          <div className="font-semibold">
+            {mode === 'agent' ? `Customer #${customerId}` : `Agent #${agent ?? '—'}`}
+          </div>
         </div>
         <div className="text-sm text-slate-500">
-          {mode === 'agent' ? `Agent #${agent ?? '—'}` : 'Customer Mode'}
+          {mode === 'agent' ? `Agent #${agent ?? '—'}` : `Customer #${customerId}`}
         </div>
       </div>
 
@@ -165,12 +186,19 @@ export default function ChatWindow({ mode, customerId, agentId: initialAgentId }
           )}
           <div className="space-y-3">
             {messages.map((m) => {
-              const isOutgoing = m.type === 'outgoing'
+              // Backend type field is from agent's perspective:
+              // - 'incoming' = from customer
+              // - 'outgoing' = from agent
+              // So we need to flip the logic for customer mode
+              const isMine = mode === 'agent' 
+                ? m.type === 'outgoing'  // Agent: my messages are 'outgoing'
+                : m.type === 'incoming'  // Customer: my messages are 'incoming' (to agent)
+              
               return (
-                <div key={m.id ? `${m.type}-${m.id}` : `local-${Date.now()}-${Math.random()}`} className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[70%] p-3 rounded-lg ${isOutgoing ? 'bg-blue-600 text-white' : 'bg-white border'}`}>
+                <div key={m.id ? `${m.type}-${m.id}` : `local-${Date.now()}-${Math.random()}`} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[70%] p-3 rounded-lg ${isMine ? 'bg-blue-600 text-white' : 'bg-white border'}`}>
                     <div className="text-sm break-words">{m.message}</div>
-                    <div className="text-xs text-slate-300 mt-2 text-right">{m.created_at}</div>
+                    <div className={`text-xs mt-2 text-right ${isMine ? 'text-blue-200' : 'text-slate-400'}`}>{m.created_at}</div>
                   </div>
                 </div>
               )

@@ -49,8 +49,12 @@ else if ($agent_id && $customer_id) {
 $stmt = $pdo->prepare("INSERT INTO messages (type, message, customer_id, agent_id) VALUES (?, ?, ?, ?)");
 $stmt->execute([$type, $message, $customer_id, $agent_id]);
 
+// Get the inserted message ID
+$message_id = $pdo->lastInsertId();
+
 // Trigger Pusher event
 $pusher->trigger("chat_channel_{$customer_id}", 'new_message', [
+    'id' => $message_id,
     'type' => $type,
     'message' => $message,
     'customer_id' => $customer_id,
