@@ -4,9 +4,9 @@ export default function AssignmentRow({ data, onReassign, onDelete, onMessage })
       <td className="py-2 px-3">{data.customer_name}</td>
       <td className="py-2 px-3">{data.agent_username}</td>
       <td className="py-2 px-3 text-right space-x-2">
-        <button onClick={onReassign} className="bg-blue-500 text-white px-3 py-1 rounded-md text-sm">Reassign</button>
-        <button onClick={onMessage} className="bg-green-500 text-white px-3 py-1 rounded-md text-sm">Message</button>
-        <button onClick={onDelete} className="bg-red-500 text-white px-3 py-1 rounded-md text-sm">Delete</button>
+        <button onClick={onReassign} className="bg-blue-500 hover:bg-blue-600 cursor-pointer text-white px-3 py-1 rounded-md text-sm">Reassign</button>
+        <button onClick={onMessage} className="bg-green-500 hover:bg-green-600 cursor-pointer text-white px-3 py-1 rounded-md text-sm">Message</button>
+        <button onClick={onDelete} className="bg-red-500 hover:bg-red-600 cursor-pointer text-white px-3 py-1 rounded-md text-sm">Delete</button>
       </td>
     </tr>
   );

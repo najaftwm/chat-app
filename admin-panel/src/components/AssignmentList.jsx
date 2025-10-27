@@ -23,7 +23,7 @@ export default function AssignmentList() {
 
   return (
     <div className="bg-white shadow-md rounded-xl p-4">
-      <h2 className="text-xl font-bold mb-4">Assigned Leads</h2>
+      <h2 className="text-xl font-bold mb-4">Assigned Chats</h2>
 
       {loading ? (
         <p className="text-gray-500">Loading...</p>

@@ -4,6 +4,40 @@ import axios from "axios";
 const API_BASE = "http://localhost/chatapp/server/";
 
 export const ApiClient = {
+  // Login authentication
+  async login(username, password) {
+    try {
+      const response = await axios.post(`${API_BASE}login.php`, {
+        username: username,
+        password: password,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error logging in:", error);
+      return {
+        status: "error",
+        message: "Network error. Please try again.",
+      };
+    }
+  },
+
+  // Logout
+  async logout() {
+    localStorage.removeItem("user");
+    localStorage.removeItem("isAuthenticated");
+  },
+
+  // Check if user is authenticated
+  isAuthenticated() {
+    return localStorage.getItem("isAuthenticated") === "true";
+  },
+
+  // Get current user
+  getCurrentUser() {
+    const userStr = localStorage.getItem("user");
+    return userStr ? JSON.parse(userStr) : null;
+  },
+
   // Get all assignments with customer and agent details
   async getAssignments() {
     try {

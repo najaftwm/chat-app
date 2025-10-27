@@ -22,7 +22,7 @@ export default function UnassignedLeads({ onAssignSuccess }) {
   return (
     <>
       <div className="bg-white shadow-md rounded-xl p-4">
-        <h2 className="text-xl font-bold mb-4">Assign Leads</h2>
+        <h2 className="text-xl font-bold mb-4">Assign chats</h2>
 
         {loading ? (
           <p className="text-gray-500">Loading...</p>
@@ -50,8 +50,8 @@ export default function UnassignedLeads({ onAssignSuccess }) {
                   onClick={() => setAssignData(customer)}
                   className={`px-3 py-1 rounded-md text-sm transition ${
                     customer.agent_id
-                      ? "bg-yellow-500 hover:bg-yellow-600 text-white"
-                      : "bg-green-500 hover:bg-green-600 text-white"
+                      ? "bg-blue-600 hover:bg-blue-700 cursor-pointer text-white"
+                      : "bg-red-500 hover:bg-red-600 cursor-pointer text-white"
                   }`}
                 >
                   {customer.agent_id ? "Reassign" : "Assign"}
