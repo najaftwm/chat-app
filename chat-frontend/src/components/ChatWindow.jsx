@@ -3,23 +3,11 @@ import Pusher from 'pusher-js'
 import { Send } from 'lucide-react'
 import { getMessages, sendMessage, getAssignedAgent } from '../api'
 
-/**
- * ChatWindow component - main chat area.
- * Props:
- *  - mode: 'customer' | 'agent'
- *  - customerId (number)
- *  - agentId (number | null)
- *
- * Behavior:
- *  - Fetches message history on mount
- *  - Subscribes to Pusher channel `chat_channel_{customerId}`
- *  - Appends incoming events to messages state
- *  - Allows sending messages (uses sendMessage API)
- */
+
 export default function ChatWindow({ mode, customerId, agentId: initialAgentId }) {
   const [messages, setMessages] = useState([])
   const [text, setText] = useState('')
-  const [agent, setAgent] = useState(initialAgentId || null)
+  const [agent, setAgent] = useState(initialAgentId ? { id: initialAgentId } : null)
   const messagesEndRef = useRef(null)
   const pusherRef = useRef(null)
   const channelRef = useRef(null)
@@ -29,6 +17,21 @@ export default function ChatWindow({ mode, customerId, agentId: initialAgentId }
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' })
     }
+  }
+
+  const formatTime = (timestamp) => {
+    if (!timestamp) return ''
+    
+    const date = new Date(timestamp)
+    let hours = date.getHours()
+    const minutes = date.getMinutes()
+    const ampm = hours >= 12 ? 'pm' : 'am'
+    
+    hours = hours % 12
+    hours = hours || 12 // 0 should be 12
+    const minutesStr = minutes < 10 ? '0' + minutes : minutes
+    
+    return `${hours}:${minutesStr}${ampm}`
   }
 
   // load history and assigned agent
@@ -42,10 +45,10 @@ export default function ChatWindow({ mode, customerId, agentId: initialAgentId }
         const res = await getMessages(customerId)
         if (res.status === 'success' && mounted) {
           setMessages(res.messages || [])
-          // set agent from assigned agent if not provided
-          if (!initialAgentId) {
-            const ag = await getAssignedAgent(customerId)
-            if (ag.status === 'success' && ag.agent) setAgent(ag.agent.id)
+          // Fetch agent details to get username
+          const ag = await getAssignedAgent(customerId)
+          if (ag.status === 'success' && ag.agent && mounted) {
+            setAgent(ag.agent) // Store full agent object with id and username
           }
           // scroll after a small delay so UI has rendered
           setTimeout(scrollToBottom, 50)
@@ -71,14 +74,12 @@ export default function ChatWindow({ mode, customerId, agentId: initialAgentId }
       console.warn('VITE_PUSHER_KEY not set in .env.local — realtime will not work')
       return
     }
-
-    // Initialize Pusher and subscribe
-    console.log('🔌 Initializing Pusher connection...')
+    console.log(' Initializing Pusher connection...')
     const pusher = new Pusher(key, { cluster, forceTLS: true })
     pusherRef.current = pusher
 
     const channelName = `chat_channel_${customerId}`
-    console.log('📡 Subscribing to channel:', channelName)
+    console.log(' Subscribing to channel:', channelName)
     const channel = pusher.subscribe(channelName)
     channelRef.current = channel
 
@@ -96,7 +97,7 @@ export default function ChatWindow({ mode, customerId, agentId: initialAgentId }
           }
         }
         
-        console.log('✅ Adding new message')
+        console.log(' Adding new message')
         return [...prev, payload]
       })
       // scroll to bottom so new message is visible
@@ -130,7 +131,7 @@ export default function ChatWindow({ mode, customerId, agentId: initialAgentId }
     const payload = { customer_id: Number(customerId), message: text }
     if (mode === 'agent') {
       // agent must include agent_id
-      payload.agent_id = Number(agent)
+      payload.agent_id = Number(agent?.id || agent)
     }
     
     console.log(' Payload:', payload)
@@ -170,17 +171,21 @@ export default function ChatWindow({ mode, customerId, agentId: initialAgentId }
             {mode === 'agent' ? 'Chat with Customer' : 'Chat with Agent'}
           </div>
           <div className="font-semibold">
-            {mode === 'agent' ? `Customer #${customerId}` : `Agent #${agent ?? '—'}`}
+            {mode === 'agent' 
+              ? `Customer #${customerId}` 
+              : (agent?.username ? agent.username : `Agent #${agent?.id ?? '—'}`)}
           </div>
         </div>
         <div className="text-sm text-slate-500">
-          {mode === 'agent' ? `Agent #${agent ?? '—'}` : `Customer #${customerId}`}
+          {mode === 'agent' 
+            ? (agent?.username ? agent.username : `Agent #${agent?.id ?? '—'}`)
+            : `Customer #${customerId}`}
         </div>
       </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-auto p-4 bg-gradient-to-b from-white to-slate-50">
-        <div className="max-w-3xl mx-auto">
+        <div>
           {messages.length === 0 && (
             <div className="text-center text-slate-400">No messages yet</div>
           )}
@@ -198,7 +203,7 @@ export default function ChatWindow({ mode, customerId, agentId: initialAgentId }
                 <div key={m.id ? `${m.type}-${m.id}` : `local-${Date.now()}-${Math.random()}`} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[70%] p-3 rounded-lg ${isMine ? 'bg-blue-600 text-white' : 'bg-white border'}`}>
                     <div className="text-sm break-words">{m.message}</div>
-                    <div className={`text-xs mt-2 text-right ${isMine ? 'text-blue-200' : 'text-slate-400'}`}>{m.created_at}</div>
+                    <div className={`text-xs mt-2 text-right ${isMine ? 'text-blue-200' : 'text-slate-400'}`}>{formatTime(m.created_at)}</div>
                   </div>
                 </div>
               )
@@ -210,7 +215,7 @@ export default function ChatWindow({ mode, customerId, agentId: initialAgentId }
 
       {/* Input */}
       <div className="p-4 border-t bg-white">
-        <div className="max-w-3xl mx-auto flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}

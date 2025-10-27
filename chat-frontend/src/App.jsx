@@ -7,7 +7,11 @@ export default function App() {
   const [mode, setMode] = useState(null) // 'customer' or 'agent'
   const [customerIdInput, setCustomerIdInput] = useState('')
   const [agentIdInput, setAgentIdInput] = useState('')
-  const [session, setSession] = useState(null) // { mode, customerId, agentId }
+  const [session, setSession] = useState(() => {
+    // Load session from localStorage on initial load
+    const saved = localStorage.getItem('chatSession')
+    return saved ? JSON.parse(saved) : null
+  })
   const [previewMessages, setPreviewMessages] = useState([])
 
   // If you open as agent and assign, we call assignAgent endpoint (temporary admin behavior)
@@ -57,7 +61,16 @@ export default function App() {
     setSession(null)
     setMode(null)
     setPreviewMessages([])
+    localStorage.removeItem('chatSession')
   }
+
+  // Save session to localStorage whenever it changes
+  useEffect(() => {
+    if (session) {
+      localStorage.setItem('chatSession', JSON.stringify(session))
+      setMode(session.mode)
+    }
+  }, [session])
 
   // Optional: show a tiny preview of messages by reading local storage or leaving empty.
   useEffect(() => {
@@ -127,7 +140,7 @@ export default function App() {
   // Main app layout: sidebar (30%) + chat (70%)
   return (
     <div className="min-h-screen flex">
-      <div className="w-1/3 h-screen">
+      <div className="w-1/4 h-screen">
         <Sidebar
           info={{
             mode: session.mode,
@@ -135,6 +148,7 @@ export default function App() {
             agentId: session.agentId
           }}
           previewMessages={previewMessages}
+          onReset={reset}
         />
       </div>
 
@@ -145,14 +159,6 @@ export default function App() {
           agentId={session.agentId}
         />
       </div>
-
-      {/* <button
-        onClick={reset}
-        className="fixed bottom-6 right-6 bg-red-600 text-white p-3 rounded-full shadow-lg"
-        title="Back to landing"
-      >
-        ←
-      </button> */}
     </div>
   )
 }
