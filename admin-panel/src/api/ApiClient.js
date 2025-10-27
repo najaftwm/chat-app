@@ -97,4 +97,32 @@ export const ApiClient = {
       throw error;
     }
   },
+
+  // Get all customers
+  async getCustomers() {
+    try {
+      const response = await axios.get(`${API_BASE}getCustomers.php`);
+      if (response.data.status === "success") {
+        return response.data.customers;
+      }
+      return [];
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+      return [];
+    }
+  },
+
+  // Assign agent to customer
+  async assignAgent(customerId, agentId) {
+    try {
+      const response = await axios.post(`${API_BASE}assignAgent.php`, {
+        customer_id: customerId,
+        agent_id: agentId,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error assigning agent:", error);
+      throw error;
+    }
+  },
 };

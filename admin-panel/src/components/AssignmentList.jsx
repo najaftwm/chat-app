@@ -23,10 +23,12 @@ export default function AssignmentList() {
 
   return (
     <div className="bg-white shadow-md rounded-xl p-4">
-      <h2 className="text-xl font-bold mb-4">Customer ⇄ Agent Assignments</h2>
+      <h2 className="text-xl font-bold mb-4">Assigned Leads</h2>
 
       {loading ? (
         <p className="text-gray-500">Loading...</p>
+      ) : assignments.length === 0 ? (
+        <p className="text-gray-500 text-sm">No assigned customers yet</p>
       ) : (
         <table className="w-full text-left">
           <thead className="border-b">
