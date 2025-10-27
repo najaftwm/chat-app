@@ -3,14 +3,6 @@ import Sidebar from './components/Sidebar'
 import ChatWindow from './components/ChatWindow'
 import { assignAgent, getAssignedAgent } from './api'
 
-/**
- * App - single page application that contains:
- *  - Landing form to open chat as Customer or Agent
- *  - Sidebar + ChatWindow layout
- *
- * This file implements the "two windows" flow by allowing you to open
- * two browser tabs and enter different modes/ids in each.
- */
 export default function App() {
   const [mode, setMode] = useState(null) // 'customer' or 'agent'
   const [customerIdInput, setCustomerIdInput] = useState('')
@@ -126,9 +118,7 @@ export default function App() {
             </button>
           </div>
 
-          <p className="text-sm text-slate-500 mt-4">
-            Tip: open two browser tabs/windows — one as Customer and one as Agent using the same customer_id.
-          </p>
+          
         </div>
       </div>
     )
@@ -156,13 +146,13 @@ export default function App() {
         />
       </div>
 
-      <button
+      {/* <button
         onClick={reset}
         className="fixed bottom-6 right-6 bg-red-600 text-white p-3 rounded-full shadow-lg"
         title="Back to landing"
       >
         ←
-      </button>
+      </button> */}
     </div>
   )
 }

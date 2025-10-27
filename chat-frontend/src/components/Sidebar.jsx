@@ -1,17 +1,11 @@
 import React from 'react'
 
-/**
- * Sidebar: shows mode info, simple header and last N messages preview.
- * Props:
- *  - info: { mode: 'customer'|'agent', customerId, agentId (optional) }
- *  - previewMessages: array of last messages (most recent last)
- */
 export default function Sidebar({ info, previewMessages }) {
   return (
     <aside className="h-full p-4 bg-slate-50 border-r">
       <div className="mb-4">
         <h1 className="text-xl font-semibold">Simple Chat</h1>
-        <p className="text-sm text-slate-600 mt-1">Real-time demo</p>
+        <p className="text-sm text-slate-600 mt-1">Real-time </p>
       </div>
 
       <div className="mb-4">
